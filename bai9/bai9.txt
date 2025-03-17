@@ -1,0 +1,140 @@
+import sys
+
+def solve1(n, m, queries):
+    a = [[[0] * (n + 1) for _ in range(n + 1)] for _ in range(n + 1)]
+    
+    for q in queries:
+        if q[0] == 0:
+            _, x, y, z, w = q
+            a[x][y][z] = w
+        else:
+            _, x, y, z, u, v, k = q
+            sum_val = sum(a[x1][y1][z1] for x1 in range(x, u + 1) for y1 in range(y, v + 1) for z1 in range(z, k + 1))
+            print(sum_val)
+
+def solve2(n, m, queries):
+    a = [[[0] * (n + 1) for _ in range(n + 1)] for _ in range(n + 1)]
+    pos = m + 1
+    
+    for i, q in enumerate(queries, 1):
+        if q[0] == 0:
+            _, x, y, z, w = q
+            a[x][y][z] = w
+        else:
+            pos = i
+            break
+    
+    for i in range(1, n + 1):
+        for j in range(1, n + 1):
+            for k in range(1, n + 1):
+                for mask in range(1, 8):
+                    x, y, z = i, j, k
+                    cnt = 0
+                    if (mask >> 0) & 1:
+                        x -= 1
+                        cnt += 1
+                    if (mask >> 1) & 1:
+                        y -= 1
+                        cnt += 1
+                    if (mask >> 2) & 1:
+                        z -= 1
+                        cnt += 1
+                    if cnt % 2 == 1:
+                        a[i][j][k] += a[x][y][z]
+                    else:
+                        a[i][j][k] -= a[x][y][z]
+    
+    for i in range(pos - 1, m):
+        _, x, y, z, u, v, k = queries[i]
+        sum_val = 0
+        for mask in range(8):
+            u1, v1, k1 = u, v, k
+            cnt = 0
+            if (mask >> 0) & 1:
+                u1 = x - 1
+                cnt += 1
+            if (mask >> 1) & 1:
+                v1 = y - 1
+                cnt += 1
+            if (mask >> 2) & 1:
+                k1 = z - 1
+                cnt += 1
+            if cnt % 2 == 1:
+                sum_val -= a[u1][v1][k1]
+            else:
+                sum_val += a[u1][v1][k1]
+        print(sum_val)
+
+def solve3(n, m, queries):
+    a = [[[0] * (n + 1) for _ in range(n + 1)] for _ in range(n + 1)]
+    bit = [[[0] * (n + 1) for _ in range(n + 1)] for _ in range(n + 1)]
+    
+    def update_bit(x, y, z, w):
+        xi = x
+        while xi <= n:
+            yi = y
+            while yi <= n:
+                zi = z
+                while zi <= n:
+                    bit[xi][yi][zi] += w
+                    zi += zi & -zi
+                yi += yi & -yi
+            xi += xi & -xi
+    
+    def get_bit(x, y, z):
+        res = 0
+        xi = x
+        while xi > 0:
+            yi = y
+            while yi > 0:
+                zi = z
+                while zi > 0:
+                    res += bit[xi][yi][zi]
+                    zi -= zi & -zi
+                yi -= yi & -yi
+            xi -= xi & -xi
+        return res
+    
+    for q in queries:
+        if q[0] == 0:
+            _, x, y, z, w = q
+            update_bit(x, y, z, -a[x][y][z] + w)
+            a[x][y][z] = w
+        else:
+            _, x, y, z, u, v, k = q
+            sum_val = 0
+            for mask in range(8):
+                u1, v1, k1 = u, v, k
+                cnt = 0
+                if (mask >> 0) & 1:
+                    u1 = x - 1
+                    cnt += 1
+                if (mask >> 1) & 1:
+                    v1 = y - 1
+                    cnt += 1
+                if (mask >> 2) & 1:
+                    k1 = z - 1
+                    cnt += 1
+                if cnt % 2 == 1:
+                    sum_val -= get_bit(u1, v1, k1)
+                else:
+                    sum_val += get_bit(u1, v1, k1)
+            print(sum_val)
+
+t = int(input())
+for _ in range(t):
+    n, m = map(int, input().split())
+    queries = []
+    for _ in range(m):
+        q = input().split()
+        if q[0] == 'U':
+            queries.append((0, int(q[1]), int(q[2]), int(q[3]), int(q[4])))
+        else:
+            queries.append((1, int(q[1]), int(q[2]), int(q[3]), int(q[4]), int(q[5]), int(q[6])))
+    
+    if n <= 10 and m <= 1000:
+        solve1(n, m, queries)
+    elif n > 50:
+        solve2(n, m, queries)
+    else:
+        solve3(n, m, queries)
